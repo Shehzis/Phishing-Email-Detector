@@ -28,3 +28,33 @@ if st.button("🔍 Detect"):
             st.error(f"⚠️ This email is **{label}**.")
         else:
             st.success(f"✅ This email is **{label}**.")
+            
+import csv
+from datetime import datetime
+
+# Feedback prompt
+st.markdown("### ❓ Was this prediction correct?")
+feedback = st.radio("Your feedback:", ["Yes", "No"], key="feedback_radio")
+
+# If user says it was wrong, ask them for the correct label
+if feedback == "No":
+    correct_label = st.selectbox("What should it be?", ["Phishing", "Legitimate"], key="label_correct")
+
+    if st.button("Submit Feedback"):
+        # Prepare data
+        feedback_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "email": email,
+            "model_prediction": "Phishing" if prediction == 1 else "Legitimate",
+            "user_label": correct_label
+        }
+
+        # Append to CSV
+        with open("feedback_log.csv", mode="a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=feedback_entry.keys())
+            if f.tell() == 0:
+                writer.writeheader()
+            writer.writerow(feedback_entry)
+
+        st.success("✅ Thank you! Your feedback has been recorded.")
+            
