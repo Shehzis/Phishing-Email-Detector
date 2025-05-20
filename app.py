@@ -1,5 +1,8 @@
 import streamlit as st
 import joblib
+import csv
+from datetime import datetime
+
 
 # Load model and vectorizer
 model = joblib.load("svm_model_final.pkl")
@@ -13,6 +16,11 @@ st.markdown("Enter an email content below to check if it's **phishing** or **leg
 
 # Input text area
 email = st.text_area("Email content:", height=200)
+
+prediction = None
+label = None
+
+
 
 if st.button("🔍 Detect"):
     if email.strip() == "":
@@ -29,32 +37,30 @@ if st.button("🔍 Detect"):
         else:
             st.success(f"✅ This email is **{label}**.")
             
-import csv
-from datetime import datetime
 
 # Feedback prompt
-st.markdown("### ❓ Was this prediction correct?")
-feedback = st.radio("Your feedback:", ["Yes", "No"], key="feedback_radio")
+if label is not None and prediction is not None:
+    st.markdown("### ❓ Was this prediction correct?")
+    feedback = st.radio("Your feedback:", ["Yes", "No"], key="feedback_radio")
 
-# If user says it was wrong, ask them for the correct label
-if feedback == "No":
-    correct_label = st.selectbox("What should it be?", ["Phishing", "Legitimate"], key="label_correct")
+    # If user says it was wrong, ask them for the correct label
+    if feedback == "No":
+        correct_label = st.selectbox("What should it be?", ["Phishing", "Legitimate"], key="label_correct")
 
-    if st.button("Submit Feedback"):
-        # Prepare data
-        feedback_entry = {
-            "timestamp": datetime.now().isoformat(),
-            "email": email,
-            "model_prediction": "Phishing" if prediction == 1 else "Legitimate",
-            "user_label": correct_label
-        }
+        if st.button("Submit Feedback"):
+            # Prepare data
+            feedback_entry = {
+                "timestamp": datetime.now().isoformat(),
+                "email": email,
+                "model_prediction": label,
+                "user_label": correct_label
+            }
 
-        # Append to CSV
-        with open("feedback_log.csv", mode="a", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=feedback_entry.keys())
-            if f.tell() == 0:
-                writer.writeheader()
-            writer.writerow(feedback_entry)
+            # Append to CSV
+            with open("feedback_log.csv", mode="a", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=feedback_entry.keys())
+                if f.tell() == 0:
+                    writer.writeheader()
+                writer.writerow(feedback_entry)
 
-        st.success("✅ Thank you! Your feedback has been recorded.")
-            
+            st.success("✅ Thank you! Your feedback has been recorded.")
